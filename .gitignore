@@ -1,0 +1,34 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# VSCode
+.vscode/
+
+# Mac
+.DS_Store
+
+# SQLite
+*.db
+
+# ML model files
+ml/model/kobert_phishing/*
+!ml/model/kobert_phishing/.gitkeep
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# Cache
+.cache/
