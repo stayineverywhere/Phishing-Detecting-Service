@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="#E65100"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            android:tint="@color/white"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="피싱 유형 안내"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="1. 기관 사칭형"
+                android:textSize="16sp" android:textStyle="bold" android:textColor="#E65100"
+                android:paddingBottom="4dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="검찰, 금융감독원, 경찰 등 공공기관을 사칭해 계좌 동결, 수사 명목으로 금전을 요구하는 수법"
+                android:textSize="14sp" android:paddingBottom="16dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="2. 대출 사기형"
+                android:textSize="16sp" android:textStyle="bold" android:textColor="#E65100"
+                android:paddingBottom="4dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="저금리 대환대출을 미끼로 접근하여 수수료 명목의 선입금을 유도하는 수법"
+                android:textSize="14sp" android:paddingBottom="16dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="3. 지인 / 가족 사칭형"
+                android:textSize="16sp" android:textStyle="bold" android:textColor="#E65100"
+                android:paddingBottom="4dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="가족이나 친구를 사칭해 긴급 상황을 연출하고 즉각적인 송금을 요구하는 수법"
+                android:textSize="14sp" android:paddingBottom="16dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="4. 협박형"
+                android:textSize="16sp" android:textStyle="bold" android:textColor="#E65100"
+                android:paddingBottom="4dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="개인정보 유출 또는 불법 행위 연루를 협박하며 비밀 유지와 함께 송금을 강요하는 수법"
+                android:textSize="14sp" android:paddingBottom="16dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="5. 로맨스 스캠"
+                android:textSize="16sp" android:textStyle="bold" android:textColor="#E65100"
+                android:paddingBottom="4dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="SNS에서 장기간 신뢰, 친밀감을 쌓은 뒤 투자 권유 또는 긴급 상황을 빌미로 금전을 요구하는 수법"
+                android:textSize="14sp" android:paddingBottom="24dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="위험도 기준표"
+                android:textSize="18sp" android:textStyle="bold" android:paddingBottom="12dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="0 ~ 29%  :  안전 - 피싱 특징이 거의 없음"
+                android:textSize="14sp" android:textColor="#4CAF50" android:paddingBottom="8dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="30 ~ 59%  :  주의 - 일부 위험 표현 포함"
+                android:textSize="14sp" android:textColor="#FF9800" android:paddingBottom="8dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="60 ~ 79%  :  의심 - 복수 피싱 패턴 감지"
+                android:textSize="14sp" android:textColor="#FF5722" android:paddingBottom="8dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="80 ~ 100%  :  위험 - 즉시 112, 금감원(1332) 신고"
+                android:textSize="14sp" android:textColor="#F44336" android:paddingBottom="16dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
