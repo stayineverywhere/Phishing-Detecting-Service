@@ -1,12 +1,24 @@
 package com.example.voiceguard;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import java.util.*;
+import com.example.voiceguard.api.AnalysisApi;
+import com.example.voiceguard.api.AnalysisResponse;
+import com.example.voiceguard.api.ApiClient;
+import java.util.List;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class StatisticsActivity extends AppCompatActivity {
+
+    private static final String TAG = "StatisticsActivity";
+    private static final int MAX_RETRY = 2;
+    private static final long RETRY_DELAY_MS = 1200;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -14,73 +26,95 @@ public class StatisticsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_statistics);
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        int sttTotal = 0, sttDanger = 0, sttRiskSum = 0;
-        List<String> allHistory = new ArrayList<>();
+        fetchHistoryAndUpdate(0);
+    }
 
-        SharedPreferences sttPrefs = getSharedPreferences("stt_history", MODE_PRIVATE);
-        String sttSaved = sttPrefs.getString("history", "");
-        if (!sttSaved.isEmpty()) {
-            String[] items = sttSaved.split("\\|\\|");
-            for (String item : items) {
-                if (!item.isEmpty()) {
-                    sttTotal++;
-                    allHistory.add("[STT] " + item);
-                    if (item.contains("위험") || item.contains("의심")) sttDanger++;
-                    try {
-                        String[] parts = item.split(" ");
-                        for (String p : parts) {
-                            if (p.endsWith("%")) {
-                                sttRiskSum += Integer.parseInt(p.replace("%", "").trim());
-                                break;
-                            }
-                        }
-                    } catch (Exception ignored) {}
+    @Override
+    protected void onResume() {
+        super.onResume();
+        fetchHistoryAndUpdate(0);
+    }
+
+    private void fetchHistoryAndUpdate(int attempt) {
+        AnalysisApi api = ApiClient.getApi();
+        api.getHistory().enqueue(new Callback<List<AnalysisResponse>>() {
+            @Override
+            public void onResponse(Call<List<AnalysisResponse>> call, Response<List<AnalysisResponse>> response) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    return;
+                }
+
+                List<AnalysisResponse> items = response.body();
+                int total = items.size();
+                int danger = 0;
+                int sttCount = 0;
+                int riskSum = 0;
+
+                for (AnalysisResponse item : items) {
+                    if (item == null) {
+                        continue;
+                    }
+                    if ("stt".equalsIgnoreCase(item.type)) {
+                        sttCount++;
+                    }
+                    if ("HIGH".equalsIgnoreCase(item.risk_level) || "MEDIUM".equalsIgnoreCase(item.risk_level)) {
+                        danger++;
+                    }
+                    riskSum += item.risk_score;
+                }
+
+                int avgRisk = total > 0 ? Math.round((float) riskSum / total) : 0;
+
+                ((TextView) findViewById(R.id.tvTotalCount)).setText(String.valueOf(total));
+                ((TextView) findViewById(R.id.tvDangerCount)).setText(String.valueOf(danger));
+                ((TextView) findViewById(R.id.tvAvgRisk)).setText(avgRisk + "%");
+                ((TextView) findViewById(R.id.tvSttCount)).setText(String.valueOf(sttCount));
+
+                updateRecentHistory(items);
+            }
+
+            @Override
+            public void onFailure(Call<List<AnalysisResponse>> call, Throwable t) {
+                Log.e(TAG, "fetchHistoryAndUpdate failed", t);
+                if (attempt < MAX_RETRY) {
+                    new Handler(Looper.getMainLooper()).postDelayed(
+                        () -> fetchHistoryAndUpdate(attempt + 1),
+                        RETRY_DELAY_MS
+                    );
                 }
             }
-        }
+        });
+    }
 
-        int smsTotal = 0, smsDanger = 0, smsRiskSum = 0;
-        SharedPreferences smsPrefs = getSharedPreferences("sms_history", MODE_PRIVATE);
-        String smsSaved = smsPrefs.getString("history", "");
-        if (!smsSaved.isEmpty()) {
-            String[] items = smsSaved.split("\\|\\|");
-            for (String item : items) {
-                if (!item.isEmpty()) {
-                    smsTotal++;
-                    allHistory.add("[SMS] " + item);
-                    if (item.contains("위험") || item.contains("의심")) smsDanger++;
-                    try {
-                        String[] parts = item.split(" ");
-                        for (String p : parts) {
-                            if (p.endsWith("%")) {
-                                smsRiskSum += Integer.parseInt(p.replace("%", "").trim());
-                                break;
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-        }
-
-        int total = sttTotal + smsTotal;
-        int danger = sttDanger + smsDanger;
-        int avgRisk = total > 0 ? (sttRiskSum + smsRiskSum) / total : 0;
-
-        ((TextView) findViewById(R.id.tvTotalCount)).setText(String.valueOf(total));
-        ((TextView) findViewById(R.id.tvDangerCount)).setText(String.valueOf(danger));
-        ((TextView) findViewById(R.id.tvAvgRisk)).setText(avgRisk + "%");
-        ((TextView) findViewById(R.id.tvSttCount)).setText(String.valueOf(sttTotal));
-
+    private void updateRecentHistory(List<AnalysisResponse> items) {
         TextView tvHistory = findViewById(R.id.tvRecentHistory);
-        if (allHistory.isEmpty()) {
+        if (items == null || items.isEmpty()) {
             tvHistory.setText("분석 기록이 없습니다");
-        } else {
-            StringBuilder sb = new StringBuilder();
-            int limit = Math.min(10, allHistory.size());
-            for (int i = 0; i < limit; i++) {
-                sb.append("• ").append(allHistory.get(i)).append("\n");
-            }
-            tvHistory.setText(sb.toString().trim());
+            return;
         }
+
+        StringBuilder sb = new StringBuilder();
+        int limit = Math.min(10, items.size());
+        for (int i = 0; i < limit; i++) {
+            AnalysisResponse item = items.get(i);
+            if (item == null) {
+                continue;
+            }
+            String prefix = "[기타]";
+            if (item.type != null) {
+                if ("stt".equalsIgnoreCase(item.type)) {
+                    prefix = "[STT]";
+                } else if ("message".equalsIgnoreCase(item.type)) {
+                    prefix = "[SMS]";
+                }
+            }
+
+            String text = item.text == null ? "" : item.text;
+            String summary = prefix + " " + item.risk_level + " " + item.risk_score + "% - "
+                + text.substring(0, Math.min(30, text.length())) + "...";
+            sb.append("• ").append(summary).append("\n");
+        }
+
+        tvHistory.setText(sb.toString().trim());
     }
 }
