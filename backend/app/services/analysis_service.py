@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 from sqlalchemy.orm import Session
 
+from collections import Counter, defaultdict
+
 from backend.app.models import AnalysisHistory
 from backend.app.schemas import AnalysisResponse
 from ml.predictor import predict_phishing
@@ -139,3 +141,126 @@ def get_statistics(db: Session):
         "message_analysis_count": message_analysis_count,
         "recent_history": [db_to_response(item) for item in recent_items]
     }
+// 검색 기능 추가
+def search_history(
+    db: Session,
+    risk_level: str = None,
+    analysis_type: str = None,
+    keyword: str = None
+):
+    query = db.query(AnalysisHistory)
+
+    if risk_level:
+        query = query.filter(AnalysisHistory.risk_level == risk_level)
+
+    if analysis_type:
+        query = query.filter(AnalysisHistory.type == analysis_type)
+
+    if keyword:
+        query = query.filter(AnalysisHistory.text.contains(keyword))
+
+    items = query.order_by(AnalysisHistory.id.desc()).all()
+
+    return [db_to_response(item) for item in items]
+
+
+def get_recent_history(db: Session, page: int = 1, size: int = 10):
+    offset = (page - 1) * size
+
+    items = (
+        db.query(AnalysisHistory)
+        .order_by(AnalysisHistory.id.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+
+    total = db.query(AnalysisHistory).count()
+
+    return {
+        "page": page,
+        "size": size,
+        "total": total,
+        "items": [db_to_response(item) for item in items]
+    }
+
+
+def delete_all_history(db: Session):
+    deleted_count = db.query(AnalysisHistory).delete()
+    db.commit()
+
+    return {
+        "message": "전체 분석 기록이 삭제되었습니다.",
+        "deleted_count": deleted_count
+    }
+
+
+def get_history_sorted_by_risk(db: Session):
+    items = (
+        db.query(AnalysisHistory)
+        .order_by(AnalysisHistory.risk_score.desc())
+        .all()
+    )
+
+    return [db_to_response(item) for item in items]
+
+
+def get_daily_statistics(db: Session):
+    items = db.query(AnalysisHistory).all()
+
+    daily_count = defaultdict(int)
+
+    for item in items:
+        date = item.created_at[:10]
+        daily_count[date] += 1
+
+    return [
+        {
+            "date": date,
+            "count": count
+        }
+        for date, count in sorted(daily_count.items())
+    ]
+
+
+def get_risk_level_statistics(db: Session):
+    items = db.query(AnalysisHistory).all()
+
+    result = {
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0
+    }
+
+    total = len(items)
+
+    for item in items:
+        if item.risk_level in result:
+            result[item.risk_level] += 1
+
+    return {
+        "total": total,
+        "counts": result,
+        "ratios": {
+            level: round((count / total) * 100, 2) if total > 0 else 0
+            for level, count in result.items()
+        }
+    }
+
+
+def get_top_keywords(db: Session, limit: int = 10):
+    items = db.query(AnalysisHistory).all()
+
+    counter = Counter()
+
+    for item in items:
+        keywords = json.loads(item.detected_keywords or "[]")
+        counter.update(keywords)
+
+    return [
+        {
+            "keyword": keyword,
+            "count": count
+        }
+        for keyword, count in counter.most_common(limit)
+    ]    
