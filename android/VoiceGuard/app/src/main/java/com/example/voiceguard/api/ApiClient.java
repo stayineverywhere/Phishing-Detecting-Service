@@ -6,10 +6,26 @@ import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import android.os.Build;
 
 public class ApiClient {
-    private static final String BASE_URL = "http://10.0.2.2:8000/";
+    private static final String BASE_URL_EMULATOR = "http://10.0.2.2:8000/";
+    private static final String BASE_URL_DEVICE = "http://127.0.0.1:8000/";
     private static AnalysisApi api;
+
+    private static String getBaseUrl() {
+        return isEmulator() ? BASE_URL_EMULATOR : BASE_URL_DEVICE;
+    }
+
+    private static boolean isEmulator() {
+        return Build.FINGERPRINT.startsWith("generic")
+                || Build.FINGERPRINT.toLowerCase().contains("emulator")
+                || Build.MODEL.contains("Emulator")
+                || Build.MODEL.contains("Android SDK built for x86")
+                || Build.MANUFACTURER.contains("Genymotion")
+                || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
+                || "google_sdk".equals(Build.PRODUCT);
+    }
 
     public static AnalysisApi getApi() {
         if (api == null) {
@@ -26,7 +42,7 @@ public class ApiClient {
                 .build();
 
             Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
+                .baseUrl(getBaseUrl())
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();

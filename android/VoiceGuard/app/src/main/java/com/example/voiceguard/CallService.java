@@ -2,8 +2,14 @@ package com.example.voiceguard;
 
 import android.app.*;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.IBinder;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -11,6 +17,7 @@ import android.speech.SpeechRecognizer;
 import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -22,20 +29,100 @@ public class CallService extends Service {
 
     private SpeechRecognizer speechRecognizer;
     private Intent recognizerIntent;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean isListening = false;
+    private int consecutiveErrors = 0;
+
+    private AudioManager audioManager;
+    private AudioFocusRequest audioFocusRequest;
+    private final AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = focusChange -> {};
+    private int previousAudioMode = AudioManager.MODE_NORMAL;
+    private boolean previousSpeakerphone = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
+
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "RECORD_AUDIO not granted; stopping CallService");
+            stopSelf();
+            return;
+        }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Log.w(TAG, "SpeechRecognizer not available; stopping CallService");
+            stopSelf();
+            return;
+        }
+
+        audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (audioManager != null) {
+            previousAudioMode = audioManager.getMode();
+            previousSpeakerphone = audioManager.isSpeakerphoneOn();
+            audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+            audioManager.setSpeakerphoneOn(true);
+            requestAudioFocus();
+        }
+
+        Intent openSttIntent = new Intent(this, SttAnalysisActivity.class);
+        PendingIntent openSttPendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                openSttIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("VoiceGuard 실시간 분석 중")
                 .setContentText("통화 내용을 분석하여 피싱 여부를 감시하고 있습니다.")
                 .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setContentIntent(openSttPendingIntent)
                 .build();
 
         startForeground(1, notification);
 
-        initSpeechRecognizer();
+        try {
+            initSpeechRecognizer();
+        } catch (Exception e) {
+            Log.e(TAG, "initSpeechRecognizer failed", e);
+            stopSelf();
+        }
+    }
+
+    private void requestAudioFocus() {
+        if (audioManager == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build();
+            audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    .setAudioAttributes(attributes)
+                    .setOnAudioFocusChangeListener(audioFocusChangeListener)
+                    .build();
+            audioManager.requestAudioFocus(audioFocusRequest);
+        } else {
+            audioManager.requestAudioFocus(
+                    audioFocusChangeListener,
+                    AudioManager.STREAM_VOICE_CALL,
+                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+            );
+        }
+    }
+
+    private void abandonAudioFocus() {
+        if (audioManager == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
+            audioManager.abandonAudioFocusRequest(audioFocusRequest);
+        } else {
+            audioManager.abandonAudioFocus(audioFocusChangeListener);
+        }
     }
 
     private void initSpeechRecognizer() {
@@ -53,10 +140,11 @@ public class CallService extends Service {
             @Override public void onEndOfSpeech() { Log.d(TAG, "onEndOfSpeech"); }
             @Override public void onError(int error) {
                 Log.e(TAG, "onError: " + error);
-                // Restart if error occurs
-                if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                    speechRecognizer.startListening(recognizerIntent);
-                }
+                isListening = false;
+                // Back off on errors to avoid tight restart loops during calls.
+                long delayMs = (error == SpeechRecognizer.ERROR_NO_MATCH
+                        || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) ? 500L : 1500L;
+                restartListeningWithDelay(delayMs);
             }
 
             @Override
@@ -66,8 +154,8 @@ public class CallService extends Service {
                     String text = matches.get(0);
                     broadcastResult(text);
                 }
-                // Continue listening
-                speechRecognizer.startListening(recognizerIntent);
+                isListening = false;
+                restartListeningWithDelay(300L);
             }
 
             @Override
@@ -81,19 +169,33 @@ public class CallService extends Service {
             @Override public void onEvent(int eventType, Bundle params) {}
         });
 
-        speechRecognizer.startListening(recognizerIntent);
+        restartListeningWithDelay(0L);
+    }
+
+    private void restartListeningWithDelay(long delayMs) {
+        mainHandler.removeCallbacksAndMessages(null);
+        mainHandler.postDelayed(() -> {
+            if (speechRecognizer == null || isListening) {
+                return;
+            }
+            try {
+                isListening = true;
+                speechRecognizer.startListening(recognizerIntent);
+                consecutiveErrors = 0;
+            } catch (Exception e) {
+                Log.e(TAG, "startListening failed", e);
+                isListening = false;
+                consecutiveErrors++;
+                long backoff = Math.min(3000L, 500L * (1L + consecutiveErrors));
+                restartListeningWithDelay(backoff);
+            }
+        }, delayMs);
     }
 
     private void broadcastResult(String text) {
         Intent intent = new Intent(ACTION_STT_RESULT);
         intent.putExtra(EXTRA_STT_TEXT, text);
         sendBroadcast(intent);
-
-        // Also try to open SttAnalysisActivity if not already open
-        Intent activityIntent = new Intent(this, SttAnalysisActivity.class);
-        activityIntent.putExtra("stt_text", text);
-        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(activityIntent);
     }
 
     @Override
@@ -105,7 +207,19 @@ public class CallService extends Service {
     public void onDestroy() {
         super.onDestroy();
         if (speechRecognizer != null) {
+            try {
+                speechRecognizer.stopListening();
+            } catch (Exception e) {
+                Log.w(TAG, "stopListening failed", e);
+            }
             speechRecognizer.destroy();
+            speechRecognizer = null;
+        }
+        mainHandler.removeCallbacksAndMessages(null);
+        if (audioManager != null) {
+            abandonAudioFocus();
+            audioManager.setSpeakerphoneOn(previousSpeakerphone);
+            audioManager.setMode(previousAudioMode);
         }
     }
 

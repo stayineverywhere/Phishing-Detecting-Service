@@ -91,6 +91,7 @@ vectorizer = TfidfVectorizer()
 vectorizer.fit(phishing_patterns + normal_patterns)
 
 pattern_vec = vectorizer.transform(phishing_patterns)
+normal_vec = vectorizer.transform(normal_patterns)
 
 
 def keyword_score(text):
@@ -112,9 +113,13 @@ def keyword_score(text):
 def pattern_score(text):
     text_vec = vectorizer.transform([text])
 
-    similarity = cosine_similarity(text_vec, pattern_vec)
+    phishing_similarity = cosine_similarity(text_vec, pattern_vec)
+    normal_similarity = cosine_similarity(text_vec, normal_vec)
 
-    return float(similarity.max())
+    phishing_max = float(phishing_similarity.max())
+    normal_max = float(normal_similarity.max())
+
+    return max(phishing_max - normal_max, 0.0)
 
 
 urgency_words = ["지금", "즉시", "바로", "당장", "급해"]

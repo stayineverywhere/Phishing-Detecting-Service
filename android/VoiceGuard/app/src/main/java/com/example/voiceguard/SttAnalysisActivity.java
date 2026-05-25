@@ -27,6 +27,9 @@ public class SttAnalysisActivity extends AppCompatActivity {
     private static final String TAG = "SttAnalysisActivity";
     private static final int MAX_RETRY = 2;
     private static final long RETRY_DELAY_MS = 1200;
+    private static final long AUTO_ANALYZE_DEBOUNCE_MS = 1200;
+    private static final long AUTO_ANALYZE_MIN_INTERVAL_MS = 2500;
+    private static final int AUTO_ANALYZE_MIN_LEN = 6;
 
     private EditText etSttInput;
     private CardView cardResult;
@@ -35,6 +38,9 @@ public class SttAnalysisActivity extends AppCompatActivity {
     private ListView lvHistory;
     private List<String> historyList = new ArrayList<>();
     private ArrayAdapter<String> historyAdapter;
+    private final Handler sttHandler = new Handler(Looper.getMainLooper());
+    private String lastAnalyzedText = "";
+    private long lastAnalyzedAt = 0L;
 
     private BroadcastReceiver sttReceiver = new BroadcastReceiver() {
         @Override
@@ -43,6 +49,7 @@ public class SttAnalysisActivity extends AppCompatActivity {
                 String text = intent.getStringExtra(CallService.EXTRA_STT_TEXT);
                 if (text != null) {
                     etSttInput.setText(text);
+                    scheduleAutoAnalyze(text);
                 }
             }
         }
@@ -115,6 +122,9 @@ public class SttAnalysisActivity extends AppCompatActivity {
         String incomingStt = intent.getStringExtra("stt_text");
         if (incomingStt != null && !incomingStt.isEmpty()) {
             etSttInput.setText(incomingStt);
+            if (intent.getBooleanExtra("auto_analyze", false)) {
+                scheduleAutoAnalyze(incomingStt);
+            }
         }
     }
 
@@ -126,6 +136,31 @@ public class SttAnalysisActivity extends AppCompatActivity {
         } catch (Exception e) {
             // Ignore if not registered
         }
+        sttHandler.removeCallbacksAndMessages(null);
+    }
+
+    private void scheduleAutoAnalyze(String text) {
+        if (text == null) {
+            return;
+        }
+        String trimmed = text.trim();
+        if (trimmed.length() < AUTO_ANALYZE_MIN_LEN) {
+            return;
+        }
+        sttHandler.removeCallbacksAndMessages(null);
+        sttHandler.postDelayed(() -> {
+            String current = etSttInput.getText().toString().trim();
+            if (current.length() < AUTO_ANALYZE_MIN_LEN) {
+                return;
+            }
+            long now = System.currentTimeMillis();
+            if (current.equals(lastAnalyzedText) && now - lastAnalyzedAt < AUTO_ANALYZE_MIN_INTERVAL_MS) {
+                return;
+            }
+            lastAnalyzedText = current;
+            lastAnalyzedAt = now;
+            performAnalysis(current);
+        }, AUTO_ANALYZE_DEBOUNCE_MS);
     }
 
     private void performAnalysis(String text) {
