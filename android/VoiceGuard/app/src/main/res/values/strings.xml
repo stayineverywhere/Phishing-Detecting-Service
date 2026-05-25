@@ -1,3 +1,47 @@
 <resources>
     <string name="app_name">VoiceGuard</string>
+    <string name="main_subtitle">당신의 안전한 통화 파트너</string>
+
+    <string name="menu_stt_title">전화 분석</string>
+    <string name="menu_stt_desc">통화 내용을 텍스트로 분석하여\n보이스피싱을 탐지합니다</string>
+
+    <string name="menu_sms_title">문자 · 이메일 분석</string>
+    <string name="menu_sms_desc">스미싱 문자나 피싱 메일을\n정밀하게 분석합니다</string>
+
+    <string name="menu_info_title">피싱 정보</string>
+    <string name="menu_info_desc">유형 및 대처법</string>
+
+    <string name="menu_stats_title">분석 통계</string>
+    <string name="menu_stats_desc">나의 기록 확인</string>
+
+    <string name="analyze_hint_stt">통화 종료 후 STT 전사문을 여기에 붙여넣으세요</string>
+    <string name="analyze_hint_sms">수상한 문자나 이메일 내용을 그대로 붙여넣으세요</string>
+    <string name="btn_analyze">분석하기</string>
+    <string name="btn_clear">지우기</string>
+    <string name="btn_sample">샘플 불러오기</string>
+
+    <string name="result_title">분석 결과</string>
+    <string name="result_risk_label">보이스피싱 위험도</string>
+    <string name="result_keyword_label">탐지된 위험 키워드</string>
+    <string name="result_tag_label">스캠 유형 태그</string>
+    <string name="result_history_title">최근 분석 기록</string>
+    <string name="common_go">이동</string>
+    <string name="input_label">분석할 텍스트 입력</string>
+    <string name="sample_1">샘플 1</string>
+    <string name="sample_2">샘플 2</string>
+    <string name="result_risk_level_safe">안전</string>
+    <string name="stats_summary_title">분석 요약</string>
+    <string name="stats_total_label">전체 분석</string>
+    <string name="stats_danger_label">위험 탐지</string>
+    <string name="stats_stt_label">STT 분석</string>
+    <string name="stats_empty_history">최근 분석 기록이 없습니다</string>
+    <string name="info_section_types">주요 피싱 수법</string>
+    <string name="info_section_risk">위험도 분석 기준</string>
+    <string name="info_type_1">1. 기관 사칭형</string>
+    <string name="info_type_2">2. 대출 사기형</string>
+    <string name="info_type_3">3. 지인 사칭형</string>
+    <string name="info_risk_1">0 – 29% : 안전</string>
+    <string name="info_risk_2">30 – 59% : 주의</string>
+    <string name="info_risk_3">60 – 79% : 의심</string>
+    <string name="info_risk_4">80 – 100% : 위험</string>
 </resources>

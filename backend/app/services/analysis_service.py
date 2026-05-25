@@ -141,7 +141,7 @@ def get_statistics(db: Session):
         "message_analysis_count": message_analysis_count,
         "recent_history": [db_to_response(item) for item in recent_items]
     }
-// 검색 기능 추가
+# 검색 기능 추가
 def search_history(
     db: Session,
     risk_level: str = None,
