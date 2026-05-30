@@ -203,15 +203,23 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="8dp">
+
+                    <ListView
+                        android:id="@+id/lvRecentHistory"
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp"
+                        android:divider="@color/divider"
+                        android:dividerHeight="1dp"
+                        android:visibility="gone"/>
+
                     <TextView
-                        android:id="@+id/tvRecentHistory"
+                        android:id="@+id/tvEmptyHistory"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/stats_empty_history"
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
-                        android:lineSpacingExtra="8dp"
                         android:gravity="center"
                         android:paddingVertical="40dp"/>
                 </LinearLayout>

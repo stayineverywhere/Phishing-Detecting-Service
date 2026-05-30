@@ -8,12 +8,14 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import com.example.voiceguard.api.AnalysisApi;
 import com.example.voiceguard.api.AnalysisRequest;
 import com.example.voiceguard.api.AnalysisResponse;
 import com.example.voiceguard.api.ApiClient;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -30,7 +32,8 @@ public class SmsAnalysisActivity extends AppCompatActivity {
     private TextView tvRiskPercent, tvRiskLevel, tvKeywords, tvTags, tvGuide;
     private ProgressBar progressRisk;
     private ListView lvHistory;
-    private List<String> historyList = new ArrayList<>();
+    private List<AnalysisResponse> historyList = new ArrayList<>();
+    private List<String> historySummaries = new ArrayList<>();
     private ArrayAdapter<String> historyAdapter;
 
     private static final String SAMPLE_SMS =
@@ -53,8 +56,14 @@ public class SmsAnalysisActivity extends AppCompatActivity {
         progressRisk  = findViewById(R.id.progressRisk);
         lvHistory     = findViewById(R.id.lvHistory);
 
-        historyAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, historyList);
+        historyAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, historySummaries);
         lvHistory.setAdapter(historyAdapter);
+
+        lvHistory.setOnItemClickListener((parent, view, position, id) -> {
+            if (position < historyList.size()) {
+                showDetailDialog(historyList.get(position));
+            }
+        });
 
         // Check for SMS body from Intent and perform automatic analysis
         handleIntent(getIntent());
@@ -166,15 +175,17 @@ public class SmsAnalysisActivity extends AppCompatActivity {
                 }
 
                 historyList.clear();
+                historySummaries.clear();
                 for (AnalysisResponse item : response.body()) {
                     if (item == null || item.type == null || !"message".equalsIgnoreCase(item.type)) {
                         continue;
                     }
 
+                    historyList.add(item);
                     String text = item.text == null ? "" : item.text;
                     String summary = item.risk_level + " " + item.risk_score + "% - "
                         + text.substring(0, Math.min(30, text.length())) + "...";
-                    historyList.add(summary);
+                    historySummaries.add(summary);
                 }
 
                 historyAdapter.notifyDataSetChanged();
@@ -191,5 +202,57 @@ public class SmsAnalysisActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void showDetailDialog(AnalysisResponse item) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_analysis_detail, null);
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.TransparentDialog)
+                .setView(dialogView)
+                .create();
+
+        TextView tvTitle = dialogView.findViewById(R.id.tvDialogTitle);
+        TextView tvRisk = dialogView.findViewById(R.id.tvDialogRisk);
+        TextView tvDateTime = dialogView.findViewById(R.id.tvDialogDateTime);
+        TextView tvKeywords = dialogView.findViewById(R.id.tvDialogKeywords);
+        TextView tvText = dialogView.findViewById(R.id.tvDialogText);
+        View layoutKeywords = dialogView.findViewById(R.id.layoutKeywords);
+        Button btnClose = dialogView.findViewById(R.id.btnDialogClose);
+
+        tvTitle.setText(getString(R.string.menu_sms_title));
+        tvRisk.setText(item.risk_level + " (" + item.risk_score + "%)");
+
+        // Color for risk
+        int color;
+        if (item.risk_score <= 29)      color = Color.parseColor("#34A853"); // risk_safe
+        else if (item.risk_score <= 59) color = Color.parseColor("#FBBC04"); // risk_warning
+        else if (item.risk_score <= 79) color = Color.parseColor("#F06292"); // risk_suspect
+        else                               color = Color.parseColor("#EA4335"); // risk_danger
+        tvRisk.setTextColor(color);
+
+        // Format Date
+        String formattedDate = item.created_at;
+        try {
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            Date date = inputFormat.parse(item.created_at);
+            if (date != null) {
+                formattedDate = outputFormat.format(date);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Date parse error", e);
+        }
+        tvDateTime.setText(formattedDate);
+
+        if (item.detected_keywords == null || item.detected_keywords.isEmpty()) {
+            layoutKeywords.setVisibility(View.GONE);
+        } else {
+            layoutKeywords.setVisibility(View.VISIBLE);
+            tvKeywords.setText(String.join(", ", item.detected_keywords));
+        }
+
+        tvText.setText(item.text);
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 }

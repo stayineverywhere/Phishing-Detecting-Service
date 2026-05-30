@@ -104,23 +104,31 @@
 - DTO
   - `AnalysisRequest.java`, `AnalysisResponse.java`, `StatsResponse.java`.
 
-### 4.3 STT 분석 화면
+### 4.3 공통 UI 및 다이얼로그
+- `res/layout/dialog_analysis_detail.xml`: 분석 상세 정보를 표시하는 커스텀 다이얼로그 레이아웃.
+- `res/values/themes.xml`: `TransparentDialog` 스타일을 정의하여 팝업의 시각적 완성도 향상.
+- `res/drawable/bg_dialog_text.xml`: 팝업 내 텍스트 영역의 가독성을 위한 배경 디자인.
+
+### 4.4 STT 분석 화면
 - `SttAnalysisActivity.java`
   - 텍스트 입력 → `POST /analysis/stt` 호출.
   - 위험도/키워드/태그/가이드 표시.
   - `GET /history`로 최근 STT 기록 표시.
+  - **상세 확인**: 최근 기록 리스트 클릭 시 `AnalysisResponse` 데이터를 기반으로 상세 팝업 표시.
 
-### 4.4 SMS 분석 화면
+### 4.5 SMS 분석 화면
 - `SmsAnalysisActivity.java`
   - 텍스트 입력 → `POST /analysis/message` 호출.
   - 결과 표시 방식은 STT와 동일.
   - `GET /history`에서 `type=message`만 필터.
+  - **상세 확인**: 기록 클릭 시 상세 팝업을 통해 전체 문자 내용 및 분석 결과 재확인.
 
-### 4.5 통계 화면
+### 4.6 통계 화면
 - `StatisticsActivity.java`
   - `GET /history`로 전체 기록을 받아 통계 계산.
   - 총 건수/위험 건수/평균 위험도/STT 건수 표시.
-  - 최근 기록 요약 표시.
+  - **최근 기록 개선**: 기존 `TextView` 방식에서 클릭 가능한 `ListView`로 변경.
+  - **통합 상세 팝업**: 기록 클릭 시 유형(SMS/STT) 구분 및 탐지 키워드를 포함한 상세 정보 제공.
 
 ### 4.6 앱 매니페스트
 - `android/VoiceGuard/app/src/main/AndroidManifest.xml`
