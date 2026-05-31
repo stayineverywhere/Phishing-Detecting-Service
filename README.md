@@ -12,8 +12,8 @@
 ## 1. 프로젝트 클론
 
 ```bash
-git clone <레포주소>
-cd 2026_HNU
+git clone https://github.com/sominoh/Phishing_Detecting_Program.git
+cd Phishing_Detecting_Program
 ```
 
 ---
