@@ -1,4 +1,4 @@
-# Phishing Detection Program 
+# Phishing Detecting Program 
 ## STT 전사문 기반 보이스피싱&스캠 탐지 및 경고 시스템 
 
 ◦ 한남대학교 컴퓨터공학과 2026년도 1학기 캡스톤 디자인
