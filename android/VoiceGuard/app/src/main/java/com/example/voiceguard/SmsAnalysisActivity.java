@@ -37,8 +37,8 @@ public class SmsAnalysisActivity extends AppCompatActivity {
     private ArrayAdapter<String> historyAdapter;
 
     private static final String SAMPLE_SMS =
-            "[국민은행] 고객님 계좌가 이상거래로 탐지되었습니다. " +
-                    "즉시 아래 링크에서 본인인증을 완료해주세요. http://kb-check.xyz " +
+            "[예시은행] 고객님 계좌가 이상거래로 탐지되었습니다. " +
+                    "즉시 아래 링크에서 본인인증을 완료해주세요. http://example.com " +
                     "24시간 내 미완료 시 계좌가 동결됩니다.";
 
     @Override
