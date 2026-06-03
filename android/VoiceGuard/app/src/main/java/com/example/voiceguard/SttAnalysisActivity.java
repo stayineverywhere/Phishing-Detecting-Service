@@ -75,9 +75,9 @@ public class SttAnalysisActivity extends AppCompatActivity {
     };
 
     private static final String SAMPLE1 =
-            "저희 수사과에서 금융사기주범 김명철을 검거했는데 압수수색 당시 현장에서 " +
+            "저희 수사과에서 금융사기주범 OOO을 검거했는데 압수수색 당시 현장에서 " +
                     "위조된 신분증 대포통장 그리고 보안카드 등을 대량으로 압수했어요. " +
-                    "본인 명의로 압수된 우리은행하고 하나은행 측의 계좌는 동결 처리되어 있는 상태고요. " +
+                    "본인 명의로 압수된 OO은행하고 XX은행 측의 계좌는 동결 처리되어 있는 상태고요. " +
                     "지금 즉시 계좌번호와 비밀번호를 확인해주셔야 합니다.";
 
     private static final String SAMPLE2 =
