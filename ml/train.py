@@ -90,9 +90,8 @@ def load_and_augment_dataset():
 
         if label == 1:
             aug_sentences = augment_sentence(sentence, n=3)
-            aug_sentences = augment_sentence(sentence, n=4)
         else :
-            aug_sentences = augment_sentence(sentence, n=5)
+            aug_sentences = augment_sentence(sentence, n=4)
 
         for s in aug_sentences:
             new_row = base_row.copy()
