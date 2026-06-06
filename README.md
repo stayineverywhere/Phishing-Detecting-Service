@@ -1,5 +1,5 @@
 ---
-# Phishing Detecting Program 
+# Phishing Detecting Application 
 ---
 ### 이 레포지터리는 2026-01 한남대학교 캡스톤디자인 팀프로젝트로 완성한 소스코드 모음입니다.
 ### original 레포지터리는 https://github.com/sominoh/Phishing_Detecting_Program.git 이며, 소스코드 저장 및 기록을 위해 복사하였습니다.
@@ -20,7 +20,7 @@
 ## 1. 프로젝트 클론
 
 ```bash
-git clone https://github.com/sominoh/Phishing_Detecting_Program.git
+git clone https://github.com/sominoh/Phishing_Detecting_Application.git
 cd Phishing_Detecting_Program
 ```
 
